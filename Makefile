@@ -8,7 +8,7 @@ build: ## Пересобирает все Docker-контейнеры
 	@echo "Building Docker containers..."
 	docker-compose build --no-cache
 
-up-build: ## Бмлдит и запускает все Docker-контейнеры
+up-build: ## Билдит и запускает все Docker-контейнеры
 	@echo "Starting Docker containers..."
 	docker-compose up -d --build
 

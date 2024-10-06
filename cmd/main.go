@@ -7,9 +7,9 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -25,6 +25,20 @@ var ctx = context.Background()
 // @BasePath /
 
 func main() {
+	logFile, err := os.OpenFile("gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println("Failed to open log file:", err)
+		return
+	}
+	defer func(logFile *os.File) {
+		err := logFile.Close()
+		if err != nil {
+
+		}
+	}(logFile)
+
+	gin.DefaultWriter = io.MultiWriter(logFile)
+
 	r := gin.Default()
 
 	// Настройка CORS
@@ -67,29 +81,51 @@ func main() {
 		handlers.GetPostDetail(c, rdb, ctx)
 	})
 
-	// @Summary Get all users
-	// @Description Get a list of all users
-	// @Tags users
+	// @Summary Get all authors
+	// @Description Get a list of all authors
+	// @Tags authors
 	// @Produce json
 	// @Success 200 {array} User  "Success"
-	// @Router /users [get]
-	r.GET("/users", func(c *gin.Context) {
+	// @Router /authors [get]
+	r.GET("/authors", func(c *gin.Context) {
 		handlers.GetUsers(c, rdb, ctx)
+	})
+
+	// @Summary Get post by ID
+	// @Description Get details of a specific post
+	// @Tags authors
+	// @Produce json
+	// @Param id path int true "Authors ID"
+	// @Success 200 {object} Post  "Success"
+	// @Router /authors/{id} [get]
+	r.GET("/authors/:id", func(c *gin.Context) {
+		handlers.GetUser(c, rdb, ctx)
+	})
+
+	r.GET("/userPosts/:id", func(c *gin.Context) {
+		handlers.GetUserPosts(c, rdb, ctx)
 	})
 
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "https://c.tenor.com/CgGUXc-LDc4AAAAC/tenor.gif")
 	})
 
+	r.GET("clearCache", func(c *gin.Context) {
+		handlers.ClearCache(c, rdb, ctx)
+	})
+
 	// POST Роуты
-	r.POST("/post/seen", postSeenArticle)
+	r.POST("/recentPosts", func(c *gin.Context) {
+		handlers.GetRecentPosts(c, rdb, ctx)
+	})
 
 	// Заготовка под swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Запуск сервера
-	err := r.Run(":8080")
+	err = r.Run(":8080")
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 }
@@ -102,45 +138,8 @@ func getRedisAddr() string {
 	return addr
 }
 
-// POST запрос для записи просмотренной статьи
-func postSeenArticle(c *gin.Context) {
-	// Проверка капчи (условно)
-	captchaToken := c.PostForm("captcha")
-	if !verifyCaptcha(captchaToken) {
-		c.String(http.StatusBadRequest, "Invalid captcha")
-		return
-	}
-
-	// Получаем или создаем UUID пользователя
-	userUUID, err := c.Cookie("user_uuid")
-	if err != nil {
-		userUUID = uuid.New().String()
-		c.SetCookie("user_uuid", userUUID, 3600*24*365, "/", "localhost", false, true)
-	}
-
-	// Получаем ID статьи из запроса
-	var requestBody struct {
-		PostID int `json:"post_id"`
-	}
-	if err := c.ShouldBindJSON(&requestBody); err != nil {
-		c.String(http.StatusBadRequest, "Invalid request")
-		return
-	}
-
-	// Записываем просмотренную статью (условно)
-	recordSeenArticle(userUUID, requestBody.PostID)
-
-	c.String(http.StatusOK, "Article seen recorded")
-}
-
 // Верификация капчи
 func verifyCaptcha(token string) bool {
 	// Здесь проверка капчи, возвращает true, если прошла
 	return token == "valid-captcha-token"
-}
-
-// Запись просмотренной статьи
-func recordSeenArticle(userUUID string, postID int) {
-	fmt.Printf("User %s viewed post %d\n", userUUID, postID)
-	// Запись в базу или in-memory store
 }
