@@ -137,9 +137,3 @@ func getRedisAddr() string {
 	}
 	return addr
 }
-
-// Верификация капчи
-func verifyCaptcha(token string) bool {
-	// Здесь проверка капчи, возвращает true, если прошла
-	return token == "valid-captcha-token"
-}
