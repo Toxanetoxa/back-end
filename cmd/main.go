@@ -64,7 +64,7 @@ func main() {
 	// @Description Get a list of all posts
 	// @Tags posts
 	// @Produce json
-	// @Success 200 {array} Post  "Success"
+	// @Success 200 {array} handlers.Post  "Success"
 	// @Router /posts [get]
 	r.GET("/posts", func(c *gin.Context) {
 		handlers.GetPosts(c, rdb, ctx)
@@ -75,7 +75,7 @@ func main() {
 	// @Tags posts
 	// @Produce json
 	// @Param id path int true "Post ID"
-	// @Success 200 {object} Post  "Success"
+	// @Success 200 {object} handlers.Post  "Success"
 	// @Router /posts/{id} [get]
 	r.GET("/posts/:id", func(c *gin.Context) {
 		handlers.GetPostDetail(c, rdb, ctx)
@@ -85,36 +85,64 @@ func main() {
 	// @Description Get a list of all authors
 	// @Tags authors
 	// @Produce json
-	// @Success 200 {array} User  "Success"
+	// @Success 200 {array} handlers.User  "Success"
 	// @Router /authors [get]
 	r.GET("/authors", func(c *gin.Context) {
 		handlers.GetUsers(c, rdb, ctx)
 	})
 
-	// @Summary Get post by ID
-	// @Description Get details of a specific post
+	// @Summary Get author by ID
+	// @Description Get details of a specific author
 	// @Tags authors
 	// @Produce json
-	// @Param id path int true "Authors ID"
-	// @Success 200 {object} Post  "Success"
+	// @Param id path int true "Author ID"
+	// @Success 200 {object} handlers.User  "Success"
 	// @Router /authors/{id} [get]
 	r.GET("/authors/:id", func(c *gin.Context) {
 		handlers.GetUser(c, rdb, ctx)
 	})
 
+	// @Summary Get posts by author ID
+	// @Description Get all posts from a specific author
+	// @Tags authors
+	// @Produce json
+	// @Param id path int true "Author ID"
+	// @Success 200 {array} handlers.Post  "Success"
+	// @Router /userPosts/{id} [get]
 	r.GET("/userPosts/:id", func(c *gin.Context) {
 		handlers.GetUserPosts(c, rdb, ctx)
 	})
 
+	// @Summary Redirect to a fun GIF
+	// @Description Redirects the root URL to a fun GIF
+	// @Tags misc
+	// @Produce json
+	// @Success 301 {string} string "Redirected"
+	// @Router / [get]
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "https://c.tenor.com/CgGUXc-LDc4AAAAC/tenor.gif")
 	})
 
+	// @Summary Clear cache
+	// @Description Clears the Redis cache
+	// @Tags cache
+	// @Produce json
+	// @Success 200 {string} string "Cache cleared"
+	// @Router /clearCache [get]
 	r.GET("clearCache", func(c *gin.Context) {
 		handlers.ClearCache(c, rdb, ctx)
 	})
 
 	// POST Роуты
+
+	// @Summary Get recent posts
+	// @Description Get a list of recent posts
+	// @Tags posts
+	// @Accept json
+	// @Produce json
+	// @Param payload body handlers.RecentPostsRequest true "Request body"
+	// @Success 200 {array} handlers.Post  "Success"
+	// @Router /recentPosts [post]
 	r.POST("/recentPosts", func(c *gin.Context) {
 		handlers.GetRecentPosts(c, rdb, ctx)
 	})
